@@ -94,11 +94,13 @@ jobs:
       - 
         name: SSH connection
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ steps.global_ip.outputs.ec2_ip }}
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ steps.global_ip.outputs.ec2_ip }} |
+          echo "Hostname: $(hostname)"
       - 
         name: Deploy to EC2
         run: |
           docker pull ${{ vars.DOCKER_HUB_USER }}/${{ vars.DOCKER_HUB_APP_NAME }}:latest |
-          docker images |
-          docker run -d -p 80:8080 ${{ vars.DOCKER_HUB_USER }}/${{ vars.DOCKER_HUB_APP_NAME }}:latest
+          docker stop ${{ vars.CONTAINER_NAME }} |
+          docker rm ${{ vars.CONTAINER_NAME }} |
+          docker run -d -p 80:8080 --name ${{ vars.CONTAINER_NAME }} ${{ vars.DOCKER_HUB_USER }}/${{ vars.DOCKER_HUB_APP_NAME }}:latest
 
