@@ -73,12 +73,14 @@ jobs:
             -var="vpc_id=${{ vars.VPC_ID }}" \
             -var="subnet_id=${{ vars.SUBNET_ID }}" \
             -var="custom_ami_id=${{ vars.AMI_ID }}" \
-            -var="key_pair_name=${{ vars.KEY_PAIR_NAME }}"
+            -var="key_pair_name=${{ vars.KEY_PAIR_NAME }}" \
+            -var="aws_region=${{ vars.AWS_REGION }}"
           terraform apply -auto-approve \
             -var="vpc_id=${{ vars.VPC_ID }}" \
             -var="subnet_id=${{ vars.SUBNET_ID }}" \
             -var="custom_ami_id=${{ vars.AMI_ID }}" \
-            -var="key_pair_name=${{ vars.KEY_PAIR_NAME }}"
+            -var="key_pair_name=${{ vars.KEY_PAIR_NAME }}" \
+            -var="aws_region=${{ vars.AWS_REGION }}"
           echo "public_ip=$(terraform output -raw public_ip)" >> $GITHUB_OUTPUT
         working-directory: terraform
       - 
