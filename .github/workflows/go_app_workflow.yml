@@ -63,7 +63,6 @@ jobs:
         if: steps.check_ec2.outputs.found == 'false'
         id: tf_outputs
         run: |
-          cd terraform |
           ls -la |
           terraform init |
           terraform apply -auto-approve \
