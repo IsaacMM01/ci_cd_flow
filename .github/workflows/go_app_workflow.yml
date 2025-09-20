@@ -68,7 +68,8 @@ jobs:
         if: steps.check_ec2.outputs.found == 'false'
         id: tf_outputs
         run: |
-          terraform init |
+          cd terraform
+          terraform init 
           terraform apply -auto-approve \
             -var="vpc_id=${{ vars.VPC_ID }}" \
             -var="subnet_id=${{ vars.SUBNET_ID }}" \
