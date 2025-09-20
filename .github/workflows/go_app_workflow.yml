@@ -29,5 +29,7 @@ jobs:
         name: Build and push
         uses: docker/build-push-action@v6
         with:
+          context: ./app
+          file: ./app/Dockerfile
           push: true
           tags: ${{vars.DOCKER_HUB_USER}}/${{vars.DOCKER_HUB_APP_NAME}}:latest
