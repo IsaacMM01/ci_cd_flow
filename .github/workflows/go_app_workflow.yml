@@ -28,9 +28,6 @@ jobs:
       - 
         name: Checkout repo
         uses: actions/checkout@v4
-      - 
-        name: List files
-        run: ls -la
       -
         name: Build and push
         uses: docker/build-push-action@v6
@@ -39,3 +36,31 @@ jobs:
           file: ./app/Dockerfile
           push: true
           tags: ${{vars.DOCKER_HUB_USER}}/${{vars.DOCKER_HUB_APP_NAME}}:latest
+      - 
+        name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v5.0.0
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+      - 
+        name: get caller identity
+        run: |
+          aws sts get-caller-identity
+      - 
+        name: Check if EC2 exists
+        id: check_ec2
+        run: |
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=docker-ami" "Name=instance-state-name,Values=running" \
+            --query "Reservations[].Instances[].InstanceId" \
+            --output text)
+      
+          if [ "$INSTANCE_ID" == "None" ] || [ -z "$INSTANCE_ID" ]; then
+            echo 'NO hay'
+            echo "found=false" >> $GITHUB_OUTPUT
+          else
+            echo 'Si hay'
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
+          fi
