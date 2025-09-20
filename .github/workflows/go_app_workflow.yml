@@ -91,25 +91,17 @@ jobs:
       - 
         name: SSH connection
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ steps.global_ip.outputs.ec2_ip }} |
-          echo "Hostname: $(hostname)"
-      - 
-        name: List running containers and images
-        run: |
-          echo '📦 Contenedores en ejecución:' |
-          docker ps |
-          echo '🖼️ Todas las imágenes Docker:' |
-          docker images
-      - 
-        name: Stop, remove container and old image
-        if: steps.check_ec2.outputs.found == 'true'
-        run: |
-          docker ps -q -f name=${{ vars.CONTAINER_NAME }} | grep -q . && docker stop ${{ vars.CONTAINER_NAME }} || echo 'No running container' |
-          docker ps -a -q -f name=${{ vars.CONTAINER_NAME }} | grep -q . && docker rm ${{ vars.CONTAINER_NAME }} || echo 'No container to remove' |
-          docker images -q ${{ vars.DOCKER_HUB_USER }}/${{ vars.DOCKER_HUB_APP_NAME }} | grep -q . && docker rmi ${{ vars.DOCKER_HUB_USER }}/${{ vars.DOCKER_HUB_APP_NAME }} || echo 'No image to remove'
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ steps.global_ip.outputs.ec2_ip }} "
+            docker ps -q -f name=${{ vars.CONTAINER_NAME }} | grep -q . && docker stop ${{ vars.CONTAINER_NAME }} || echo 'No running container'
+            docker ps -a -q -f name=${{ vars.CONTAINER_NAME }} | grep -q . && docker rm ${{ vars.CONTAINER_NAME }} || echo 'No container to remove'
+            docker images -q ${{ vars.DOCKER_HUB_USER }}/${{ vars.DOCKER_HUB_APP_NAME }} | grep -q . && docker rmi ${{ vars.DOCKER_HUB_USER }}/${{ vars.DOCKER_HUB_APP_NAME }} || echo 'No image to remove'
+          "
       - 
         name: Deploy the new container to EC2
         run: |
-          docker pull ${{ vars.DOCKER_HUB_USER }}/${{ vars.DOCKER_HUB_APP_NAME }}:latest |
-          docker run -d -p 80:8080 --name ${{ vars.CONTAINER_NAME }} ${{ vars.DOCKER_HUB_USER }}/${{ vars.DOCKER_HUB_APP_NAME }}:latest
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ steps.global_ip.outputs.ec2_ip }} "
+            docker pull ${{ vars.DOCKER_HUB_USER }}/${{ vars.DOCKER_HUB_APP_NAME }}:latest |
+            docker run -d -p 80:8080 --name ${{ vars.CONTAINER_NAME }} ${{ vars.DOCKER_HUB_USER }}/${{ vars.DOCKER_HUB_APP_NAME }}:latest
+          "
+
 
