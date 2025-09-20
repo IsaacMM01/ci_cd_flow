@@ -51,17 +51,41 @@ jobs:
         name: Check if EC2 exists
         id: check_ec2
         run: |
-          INSTANCE_ID=$(aws ec2 describe-instances \
+          PUBLIC_IP=$(aws ec2 describe-instances \
             --filters "Name=tag:Name,Values=docker_app_ami" "Name=instance-state-name,Values=running" \
-            --query "Reservations[].Instances[].InstanceId" \
+            --query "Reservations[].Instances[].PublicIpAddress" \
             --output text \
             --region ${{ vars.AWS_REGION }})
       
-          if [ "$INSTANCE_ID" == "None" ] || [ -z "$INSTANCE_ID" ]; then
-            echo 'NO hay'
+          if [ "$PUBLIC_IP" == "None" ] || [ -z "$PUBLIC_IP" ]; then
             echo "found=false" >> $GITHUB_OUTPUT
           else
-            echo 'Si hay'
             echo "found=true" >> $GITHUB_OUTPUT
-            echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
+            echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
           fi
+      - 
+        name: Terraform Apply
+        if: steps.check_ec2.outputs.found == 'false'
+        id: tf_outputs
+        run: |
+          cd terraform
+          terraform init
+          terraform apply -auto-approve \
+            -var="vpc_id=${{ vars.VPC_ID }}" \
+            -var="subnet_id=${{ vars.SUBNET_ID }}" \
+            -var="custom_ami_id=${{ vars.AMI_ID }}" \
+            -var="key_pair_name=${{ vars.KEY_PAIR_NAME }}"
+          echo "public_ip=$(terraform output -raw public_ip)" >> $GITHUB_OUTPUT
+        working-directory: terraform
+      - 
+        name: Set global EC2 IP
+        id: global_ip
+        run: |
+          if [ "${{ steps.check_ec2.outputs.found }}" == "true" ]; then
+            echo "${{ steps.check_ec2.outputs.public_ip }}"
+            echo "ec2_ip=${{ steps.check_ec2.outputs.public_ip }}" >> $GITHUB_OUTPUT
+          else
+            echo "${{ steps.tf_outputs.outputs.public_ip }}"
+            echo "ec2_ip=${{ steps.tf_outputs.outputs.public_ip }}" >> $GITHUB_OUTPUT
+          fi
+
