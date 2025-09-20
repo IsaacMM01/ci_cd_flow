@@ -59,8 +59,10 @@ jobs:
             echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
           fi
       - 
-        name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
+        name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.1
       - 
         name: Terraform Apply
         if: steps.check_ec2.outputs.found == 'false'
