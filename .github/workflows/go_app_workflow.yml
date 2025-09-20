@@ -69,6 +69,11 @@ jobs:
         id: tf_outputs
         run: |
           terraform init 
+          terraform plan \
+            -var="vpc_id=${{ vars.VPC_ID }}" \
+            -var="subnet_id=${{ vars.SUBNET_ID }}" \
+            -var="custom_ami_id=${{ vars.AMI_ID }}" \
+            -var="key_pair_name=${{ vars.KEY_PAIR_NAME }}"
           terraform apply -auto-approve \
             -var="vpc_id=${{ vars.VPC_ID }}" \
             -var="subnet_id=${{ vars.SUBNET_ID }}" \
