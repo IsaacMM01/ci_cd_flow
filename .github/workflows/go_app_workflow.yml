@@ -28,10 +28,6 @@ jobs:
       - 
         name: Checkout repo
         uses: actions/checkout@v4
-      - 
-        name: Check file
-        run: |
-          cat ./app/go_app.go
       -
         name: Build and push
         uses: docker/build-push-action@v6
@@ -46,10 +42,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_REGION }}
-      - 
-        name: get caller identity
-        run: |
-          aws sts get-caller-identity
       - 
         name: Check if EC2 exists
         id: check_ec2
@@ -105,9 +97,9 @@ jobs:
         name: Stop, remove container and old image
         if: steps.check_ec2.outputs.found == 'true'
         run: |
-          docker stop ${{ vars.CONTAINER_NAME }} |
-          docker rm ${{ vars.CONTAINER_NAME }} |
-          docker rmi ${{ vars.DOCKER_HUB_USER }}/${{ vars.DOCKER_HUB_APP_NAME }}:latest 
+          docker ps -q -f name=${{ vars.CONTAINER_NAME }} | grep -q . && docker stop ${{ vars.CONTAINER_NAME }} || echo 'No running container' |
+          docker ps -a -q -f name=${{ vars.CONTAINER_NAME }} | grep -q . && docker rm ${{ vars.CONTAINER_NAME }} || echo 'No container to remove' |
+          docker images -q ${{ vars.DOCKER_HUB_USER }}/${{ vars.DOCKER_HUB_APP_NAME }}:latest | grep -q . && docker rmi ${{ vars.DOCKER_HUB_USER }}/${{ vars.DOCKER_HUB_APP_NAME }} || echo 'No image to remove'
       - 
         name: Deploy the new container to EC2
         run: |
