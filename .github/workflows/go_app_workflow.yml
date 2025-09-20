@@ -26,6 +26,10 @@ jobs:
       - 
         name: Checkout repo
         uses: actions/checkout@v4
+      - 
+        name: Check file
+        run: |
+          cat ./app/go_app.go
       -
         name: Build and push
         uses: docker/build-push-action@v6
