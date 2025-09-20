@@ -42,7 +42,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-west-2
+          aws-region: ${{ vars.AWS_REGION }}
       - 
         name: get caller identity
         run: |
@@ -54,7 +54,8 @@ jobs:
           INSTANCE_ID=$(aws ec2 describe-instances \
             --filters "Name=tag:Name,Values=docker-app-ami" "Name=instance-state-name,Values=running" \
             --query "Reservations[].Instances[].InstanceId" \
-            --output text)
+            --output text \
+            --region ${{ vars.AWS_REGION }})
       
           if [ "$INSTANCE_ID" == "None" ] || [ -z "$INSTANCE_ID" ]; then
             echo 'NO hay'
