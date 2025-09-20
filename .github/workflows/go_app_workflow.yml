@@ -88,4 +88,19 @@ jobs:
             echo "${{ steps.tf_outputs.outputs.public_ip }}"
             echo "ec2_ip=${{ steps.tf_outputs.outputs.public_ip }}" >> $GITHUB_OUTPUT
           fi
+      - 
+        name: Setup SSH key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > key.pem
+          chmod 600 key.pem
+      - 
+        name: SSH connection
+        run: |
+          ssh -i key.pem ubuntu@${{ steps.global_ip.outputs.ec2_ip }}
+      - 
+        name: Deploy to EC2
+        run: |
+          docker pull ${{ vars.DOCKER_HUB_USER }}/${{ vars.DOCKER_HUB_APP_NAME }}:latest |
+          docker images |
+          docker run -d -p 80:8080 ${{ vars.DOCKER_HUB_USER }}/${{ vars.DOCKER_HUB_APP_NAME }}:latest |
 
