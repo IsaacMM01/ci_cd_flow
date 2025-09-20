@@ -52,7 +52,7 @@ jobs:
         id: check_ec2
         run: |
           INSTANCE_ID=$(aws ec2 describe-instances \
-            --filters "Name=tag:Name,Values=docker-ami" "Name=instance-state-name,Values=running" \
+            --filters "Name=tag:Name,Values=docker-app-ami" "Name=instance-state-name,Values=running" \
             --query "Reservations[].Instances[].InstanceId" \
             --output text)
       
