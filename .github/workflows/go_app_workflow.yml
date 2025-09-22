@@ -80,9 +80,30 @@ jobs:
             -var="ami_id=${{ vars.AMI_ID }}" \
             -var="key_pair_name=${{ vars.KEY_PAIR_NAME }}" \
             -var="aws_region=${{ vars.AWS_REGION }}"
-          echo "instance_id=$(terraform output -raw instance_id)" >> $GITHUB_OUTPUT
-          echo "public_ip=$(terraform output -raw public_ip)" >> $GITHUB_OUTPUT
         working-directory: terraform
+      - 
+        name: Check jq version
+        run: jq --version
+      - 
+        name: Get Terraform outputs
+        id: tf_outputs
+        run: |
+          cd terraform
+      
+          # Exporta a JSON limpio
+          terraform output -json > tf-outputs.json
+          cat tf_outputs.json
+          # Extrae valores con jq
+          INSTANCE_ID=$(jq -r '.instance_id.value' tf-outputs.json)
+          PUBLIC_IP=$(jq -r '.public_ip.value' tf-outputs.json)
+      
+          # Debug
+          echo "Instance ID: $INSTANCE_ID"
+          echo "Public IP: $PUBLIC_IP"
+      
+          # Exporta para otros steps
+          echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
+          echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
       - 
         name: Wait for EC2
         if: steps.check_ec2.outputs.found == 'false'
