@@ -1,6 +1,8 @@
 name: Docker Image CI
 
 on:
+  push:
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
@@ -85,8 +87,10 @@ jobs:
         id: tf_outputs
         run: |
           cd terraform
-          echo "instance_id=$(terraform output -raw instance_id)" >> $GITHUB_OUTPUT
-          echo "public_ip=$(terraform output -raw public_ip)" >> $GITHUB_OUTPUT
+          INSTANCE_ID=$(terraform output -raw instance_id)
+          PUBLIC_IP=$(terraform output -raw public_ip)
+          echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
+          echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
       - 
         name: Wait for EC2
         if: steps.check_ec2.outputs.found == 'false'
