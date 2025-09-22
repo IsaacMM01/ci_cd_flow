@@ -92,7 +92,7 @@ jobs:
         run: |
           cd terraform
           terraform output -json > tf-outputs.json
-          cat tf_outputs.json
+          cat tf-outputs.json
           INSTANCE_ID=$(jq -r '.instance_id.value' tf-outputs.json)
           PUBLIC_IP=$(jq -r '.public_ip.value' tf-outputs.json)
           echo "Instance ID: $INSTANCE_ID"
