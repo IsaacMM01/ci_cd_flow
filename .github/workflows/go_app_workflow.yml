@@ -95,6 +95,7 @@ jobs:
         name: Wait for EC2
         if: steps.check_ec2.outputs.found == 'false'
         run: |
+          sleep 30
           aws ec2 wait instance-status-ok --instance-ids ${{ steps.tf_outputs.outputs.instance_id }}
       - 
         name: Set global EC2 IP
