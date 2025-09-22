@@ -1,0 +1,127 @@
+name: Docker Image CI
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      -
+        name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      -
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - 
+        name: Checkout repo
+        uses: actions/checkout@v4
+      -
+        name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./app
+          push: true
+          tags: ${{vars.DOCKER_HUB_USER}}/${{vars.DOCKER_HUB_APP_NAME}}:latest
+      - 
+        name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v5.0.0
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - 
+        name: Check if EC2 exists
+        id: check_ec2
+        run: |
+          PUBLIC_IP=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=docker_app_ami" "Name=instance-state-name,Values=running" \
+            --query "Reservations[].Instances[].PublicIpAddress" \
+            --output text \
+            --region ${{ vars.AWS_REGION }})
+      
+          if [ "$PUBLIC_IP" == "None" ] || [ -z "$PUBLIC_IP" ]; then
+            echo "found=false" >> $GITHUB_OUTPUT
+          else
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
+          fi
+      - 
+        name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.1
+      - 
+        name: Terraform Apply
+        if: steps.check_ec2.outputs.found == 'false'
+        run: |
+          terraform init 
+          terraform plan \
+            -var="vpc_id=${{ vars.VPC_ID }}" \
+            -var="subnet_id=${{ vars.SUBNET_ID }}" \
+            -var="ami_id=${{ vars.AMI_ID }}" \
+            -var="key_pair_name=${{ vars.KEY_PAIR_NAME }}" \
+            -var="aws_region=${{ vars.AWS_REGION }}"
+          terraform apply -auto-approve \
+            -var="vpc_id=${{ vars.VPC_ID }}" \
+            -var="subnet_id=${{ vars.SUBNET_ID }}" \
+            -var="ami_id=${{ vars.AMI_ID }}" \
+            -var="key_pair_name=${{ vars.KEY_PAIR_NAME }}" \
+            -var="aws_region=${{ vars.AWS_REGION }}"
+        working-directory: terraform
+      - 
+        name: Get Terraform outputs
+        if: steps.check_ec2.outputs.found == 'false'
+        id: tf_outputs
+        run: |
+          cd terraform
+          echo "instance_id=$(terraform output -raw instance_id)" >> $GITHUB_OUTPUT
+          echo "public_ip=$(terraform output -raw public_ip)" >> $GITHUB_OUTPUT
+      - 
+        name: Wait for EC2
+        if: steps.check_ec2.outputs.found == 'false'
+        run: |
+          aws ec2 wait instance-status-ok --instance-ids ${{ steps.tf_outputs.outputs.instance_id }}
+      - 
+        name: Set global EC2 IP
+        id: global_ip
+        run: |
+          if [ "${{ steps.check_ec2.outputs.found }}" == "true" ]; then
+            echo "${{ steps.check_ec2.outputs.public_ip }}"
+            echo "ec2_ip=${{ steps.check_ec2.outputs.public_ip }}" >> $GITHUB_OUTPUT
+          else
+            echo "${{ steps.tf_outputs.outputs.public_ip }}"
+            echo "ec2_ip=${{ steps.tf_outputs.outputs.public_ip }}" >> $GITHUB_OUTPUT
+          fi
+      - 
+        name: Setup SSH key
+        run: |
+          echo "${{ secrets.DOCKER_APP_KEY }}" > key.pem
+          chmod 600 key.pem
+      - 
+        name: SSH connection
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ steps.global_ip.outputs.ec2_ip }} "
+            docker ps -q -f name=${{ vars.CONTAINER_NAME }} | grep -q . && docker stop ${{ vars.CONTAINER_NAME }} || echo 'No running container'
+            docker ps -a -q -f name=${{ vars.CONTAINER_NAME }} | grep -q . && docker rm ${{ vars.CONTAINER_NAME }} || echo 'No container to remove'
+            docker images -q ${{ vars.DOCKER_HUB_USER }}/${{ vars.DOCKER_HUB_APP_NAME }} | grep -q . && docker rmi ${{ vars.DOCKER_HUB_USER }}/${{ vars.DOCKER_HUB_APP_NAME }} || echo 'No image to remove'
+          "
+      - 
+        name: Deploy the new container to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ steps.global_ip.outputs.ec2_ip }} "
+            docker pull ${{ vars.DOCKER_HUB_USER }}/${{ vars.DOCKER_HUB_APP_NAME }}:latest |
+            docker run -d -p 80:8080 --name ${{ vars.CONTAINER_NAME }} ${{ vars.DOCKER_HUB_USER }}/${{ vars.DOCKER_HUB_APP_NAME }}:latest
+          "
+
+
