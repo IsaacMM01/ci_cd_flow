@@ -62,7 +62,7 @@ jobs:
         name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: 1.6.1
+          terraform_wrapper: false
       - 
         name: Terraform Apply
         if: steps.check_ec2.outputs.found == 'false'
@@ -82,21 +82,14 @@ jobs:
             -var="aws_region=${{ vars.AWS_REGION }}"
         working-directory: terraform
       - 
-        name: Check jq version
-        if: steps.check_ec2.outputs.found == 'false'
-        run: jq --version
-      - 
         name: Get Terraform outputs
         if: steps.check_ec2.outputs.found == 'false'
         id: tf_outputs
         run: |
           cd terraform
-          terraform output -json > tf-outputs.json
-          cat tf-outputs.json
-          INSTANCE_ID=$(jq -r '.instance_id.value' tf-outputs.json)
-          PUBLIC_IP=$(jq -r '.public_ip.value' tf-outputs.json)
-          echo "Instance ID: $INSTANCE_ID"
-          echo "Public IP: $PUBLIC_IP"
+          INSTANCE_ID=$(terraform output -raw instance_id)
+          PUBLIC_IP=$(terraform output -raw public_ip)
+      
           echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
           echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
       - 
