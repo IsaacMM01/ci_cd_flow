@@ -83,9 +83,11 @@ jobs:
         working-directory: terraform
       - 
         name: Check jq version
+        if: steps.check_ec2.outputs.found == 'false'
         run: jq --version
       - 
         name: Get Terraform outputs
+        if: steps.check_ec2.outputs.found == 'false'
         id: tf_outputs
         run: |
           cd terraform
