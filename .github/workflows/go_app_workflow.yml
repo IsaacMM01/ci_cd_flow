@@ -80,17 +80,9 @@ jobs:
             -var="ami_id=${{ vars.AMI_ID }}" \
             -var="key_pair_name=${{ vars.KEY_PAIR_NAME }}" \
             -var="aws_region=${{ vars.AWS_REGION }}"
+          echo "instance_id=$(terraform output -raw instance_id)" >> $GITHUB_OUTPUT
+          echo "public_ip=$(terraform output -raw public_ip)" >> $GITHUB_OUTPUT
         working-directory: terraform
-      - 
-        name: Get Terraform outputs
-        if: steps.check_ec2.outputs.found == 'false'
-        id: tf_outputs
-        run: |
-          cd terraform
-          INSTANCE_ID=$(terraform output -raw instance_id | head -n 1 | tr -d '\r')
-          PUBLIC_IP=$(terraform output -raw public_ip | head -n 1 | tr -d '\r')
-          echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
-          echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
       - 
         name: Wait for EC2
         if: steps.check_ec2.outputs.found == 'false'
