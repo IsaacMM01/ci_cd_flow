@@ -14,6 +14,10 @@ func main() {
 		fmt.Fprintf(w, "Hola, esta es la ruta /saludo")
 	})
 
+	http.HandleFunc("/otros", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Hola, esta es la ruta para otros asuntos")
+	})
+
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		panic(err)
