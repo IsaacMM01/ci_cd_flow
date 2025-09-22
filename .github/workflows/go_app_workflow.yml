@@ -87,8 +87,10 @@ jobs:
         id: tf_outputs
         run: |
           cd terraform
-          INSTANCE_ID=$(terraform output -raw instance_id)
-          PUBLIC_IP=$(terraform output -raw public_ip)
+          INSTANCE_ID=$(terraform output -raw instance_id | tr -d '\r')
+          PUBLIC_IP=$(terraform output -raw public_ip | tr -d '\r')
+          echo $INSTANCE_ID
+          echo $PUBLIC_IP
           echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
           echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
       - 
