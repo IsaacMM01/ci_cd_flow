@@ -91,19 +91,12 @@ jobs:
         id: tf_outputs
         run: |
           cd terraform
-      
-          # Exporta a JSON limpio
           terraform output -json > tf-outputs.json
           cat tf_outputs.json
-          # Extrae valores con jq
           INSTANCE_ID=$(jq -r '.instance_id.value' tf-outputs.json)
           PUBLIC_IP=$(jq -r '.public_ip.value' tf-outputs.json)
-      
-          # Debug
           echo "Instance ID: $INSTANCE_ID"
           echo "Public IP: $PUBLIC_IP"
-      
-          # Exporta para otros steps
           echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
           echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
       - 
