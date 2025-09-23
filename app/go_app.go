@@ -11,11 +11,11 @@ func main() {
 	})
 
 	http.HandleFunc("/saludo", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hola, esta es la ruta /saludo")
+		fmt.Fprintf(w, "Saludos, espero esten teniendo un buen día")
 	})
 
 	http.HandleFunc("/otros", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hola, esta es la ruta para otros asuntos")
+		fmt.Fprintf(w, "Estos son otros asuntos")
 	})
 
 	err := http.ListenAndServe(":8080", nil)
